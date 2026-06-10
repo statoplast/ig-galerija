@@ -3,17 +3,25 @@ import json
 import os
 import sys
 
-# 1. Tvoj Behold JSON link
 BEHOLD_URL = "https://feeds.behold.so/XHOEpcYGrSPvFmsL5PxR"
-
-# 2. Tvoj GitHub korisnički račun i repozitorij
 GITHUB_USERNAME = "statoplast"
 REPO_NAME = "ig-galerija"
 
 def run():
-    # Kreiraj mapu za slike ako ne postoji
     if not os.path.exists('images'):
         os.makedirs('images')
+
+    # 1. Učitaj postojeće projekte (povijest) kako ih ne bi izgubili
+    postojeci_projekti = []
+    if os.path.exists('projekti.json'):
+        try:
+            with open('projekti.json', 'r', encoding='utf-8') as f:
+                postojeci_projekti = json.load(f)
+        except json.JSONDecodeError:
+            print("projekti.json je prazan ili neispravan, krećemo ispočetka.")
+
+    # Napravi listu postojećih linkova da znamo što već imamo
+    postojeci_linkovi = {p['permalink'] for p in postojeci_projekti}
 
     print("Dohvaćam podatke s Beholda...")
     req = urllib.request.Request(BEHOLD_URL, headers={'User-Agent': 'Mozilla/5.0'})
@@ -26,7 +34,6 @@ def run():
         print(f"Greška pri dohvaćanju URL-a ili parsiranju JSON-a: {e}")
         sys.exit(1)
 
-    # Provjera formata podataka (može biti lista ili rječnik)
     posts_list = []
     if isinstance(data, list):
         posts_list = data
@@ -36,15 +43,10 @@ def run():
         elif "posts" in data and isinstance(data["posts"], list):
             posts_list = data["posts"]
         else:
-            print("Behold je vratio rječnik, ali ne nalazim listu postova. Ključevi:", data.keys())
             sys.exit(1)
-    else:
-        print(f"Neočekivan tip podataka od Beholda: {type(data)}")
-        sys.exit(1)
 
-    novi_projekti = []
+    novi_projekti_za_dodavanje = []
     
-    # Prođi kroz sve filtrirane postove
     for post in posts_list:
         if not isinstance(post, dict):
             continue
@@ -55,12 +57,14 @@ def run():
         if not permalink or not media_url:
             continue
             
-        # Izvuci jedinstveni kod posta iz Instagram linka
+        # 2. Ako ovaj post već imamo u našem JSON-u, preskoči ga!
+        if permalink in postojeci_linkovi:
+            continue
+            
         post_id = permalink.rstrip('/').split('/')[-1]
         slika_ime = f"{post_id}.jpg"
         slika_putanja = f"images/{slika_ime}"
         
-        # Ako slika već ne postoji na tvom GitHubu, skini ju
         if not os.path.exists(slika_putanja):
             print(f"Skidam novu sliku: {slika_ime}")
             try:
@@ -70,19 +74,21 @@ def run():
             except Exception as e:
                 print(f"Greška pri skidanju {slika_ime}: {e}")
         
-        # Stvori trajni javni link na tvoju sliku spremljenu na GitHubu
         github_slika_url = f"https://raw.githubusercontent.com/{GITHUB_USERNAME}/{REPO_NAME}/main/{slika_putanja}"
         
-        novi_projekti.append({
+        novi_projekti_za_dodavanje.append({
             "permalink": permalink,
             "mediaUrl": github_slika_url
         })
 
-    # Spremi novi projekti.json
+    # 3. Spoji nove projekte (na vrh) i stare projekte (ispod njih)
+    svi_projekti = novi_projekti_za_dodavanje + postojeci_projekti
+
+    # 4. Spremi obogaćenu listu natrag u projekti.json
     with open('projekti.json', 'w', encoding='utf-8') as f:
-        json.dump(novi_projekti, f, indent=4)
+        json.dump(svi_projekti, f, indent=4)
         
-    print(f"Uspješno sinkronizirano {len(novi_projekti)} postova u projekti.json!")
+    print(f"Dodano {len(novi_projekti_za_dodavanje)} novih postova. Ukupno arhivirano: {len(svi_projekti)}.")
 
 if __name__ == "__main__":
     run()
