@@ -1,0 +1,29 @@
+name: Ažuriraj Instagram Galeriju
+
+on:
+  schedule:
+    - cron: '0 0 * * *' # Pokreće se svaki dan u ponoć
+  workflow_dispatch: # Omogućuje ti da pokreneš ručno kad god želiš
+
+jobs:
+  update-data:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Preuzmi repozitorij
+        uses: actions/checkout@v3
+
+      - name: Postavi Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+
+      - name: Pokreni skriptu za skidanje slika
+        run: python update_feed.py
+
+      - name: Spremi promjene na GitHub
+        run: |
+          git config --global user.name 'GitHub Action'
+          git config --global user.email 'action@github.com'
+          git add -A
+          git commit -m "Automatsko ažuriranje novih postova" || exit 0
+          git push
