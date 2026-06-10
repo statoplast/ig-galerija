@@ -2,10 +2,13 @@ name: Ažuriraj Instagram Galeriju
 
 on:
   schedule:
-    - cron: '0 0 * * *' # Pokreće se svaki dan u ponoć
-  workflow_dispatch: # Omogućuje ručno pokretanje
+    - cron: '0 0 * * *' # Svaki dan u ponoć
+  workflow_dispatch: # Ručno pokretanje
 
-# Ova sekcija daje eksplicitnu dozvolu robotu da sprema datoteke u repozitorij
+# Utišavanje Node 20 deprecation upozorenja prema GitHub uputama
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
 permissions:
   contents: write
 
@@ -14,10 +17,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Preuzmi repozitorij
-        uses: actions/checkout@v4 # Nadograđeno na v4 zbog upozorenja
+        uses: actions/checkout@v4
 
       - name: Postavi Python
-        uses: actions/setup-python@v5 # Nadograđeno na v5 zbog upozorenja
+        uses: actions/setup-python@v5
         with:
           python-version: '3.x'
 
