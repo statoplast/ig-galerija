@@ -3,17 +3,21 @@ name: Ažuriraj Instagram Galeriju
 on:
   schedule:
     - cron: '0 0 * * *' # Pokreće se svaki dan u ponoć
-  workflow_dispatch: # Omogućuje ti da pokreneš ručno kad god želiš
+  workflow_dispatch: # Omogućuje ručno pokretanje
+
+# Ova sekcija daje eksplicitnu dozvolu robotu da sprema datoteke u repozitorij
+permissions:
+  contents: write
 
 jobs:
   update-data:
     runs-on: ubuntu-latest
     steps:
       - name: Preuzmi repozitorij
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4 # Nadograđeno na v4 zbog upozorenja
 
       - name: Postavi Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5 # Nadograđeno na v5 zbog upozorenja
         with:
           python-version: '3.x'
 
